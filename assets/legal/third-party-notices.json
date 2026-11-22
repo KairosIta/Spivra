@@ -1,15 +1,15 @@
 {
   "schema": 1,
   "summary": {
-    "components": 259,
+    "components": 260,
     "byKind": {
-      "android": 175,
+      "android": 176,
       "font": 4,
       "npm": 80
     },
     "byLicense": {
       "(MIT AND BSD-3-Clause)": 1,
-      "Apache-2.0": 137,
+      "Apache-2.0": 138,
       "Apache-2.0 AND BSD-2-Clause": 6,
       "BSD-2-Clause": 1,
       "BSD-3-Clause": 2,
@@ -1014,6 +1014,16 @@
     {
       "kind": "android",
       "name": "androidx.media3:media3-exoplayer",
+      "version": "1.11.1",
+      "license": "Apache-2.0",
+      "holder": "The Android Open Source Project",
+      "texts": [
+        "50e6751797c50ded"
+      ]
+    },
+    {
+      "kind": "android",
+      "name": "androidx.media3:media3-exoplayer-hls",
       "version": "1.11.1",
       "license": "Apache-2.0",
       "holder": "The Android Open Source Project",
