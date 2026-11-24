@@ -66,7 +66,8 @@ export function useInfiniteTracks(
    * ogni pagina nuova lo ripete; quando torna, il vecchio avviso non deve
    * rimanere a schermo.
    */
-  const failed = query.data?.pages.at(-1)?.failed ?? [];
+  const lastPage = query.data?.pages.at(-1);
+  const failed = lastPage?.failed ?? [];
 
   const loadMore = () => {
     if (query.hasNextPage && !query.isFetchingNextPage) query.fetchNextPage();
@@ -75,6 +76,7 @@ export function useInfiniteTracks(
   return {
     tracks,
     failed,
+    emptyPageWithMore: lastPage?.tracks.length === 0 && query.hasNextPage,
     loadMore,
     /** Ricarica da capo: serve al bottone dopo una caduta totale. */
     retry: query.refetch,

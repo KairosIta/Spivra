@@ -4,6 +4,7 @@ import { clearPlaybackFault, markPlaybackFault } from '@/store/playbackFault';
 import { savePosition, saveQueueSnapshot } from '@/store/session';
 import type { Track } from '@/types/track';
 import { reachedListen } from './historyPolicy';
+import { isLiveRadioId } from './liveRadio';
 import { budgetAfterPlayingChange, decideSkip, networkRetryDelay } from './playbackPolicy';
 
 /** Salti consumati dall'ultima riproduzione riuscita. La regola sta in playbackPolicy. */
@@ -48,6 +49,7 @@ function rememberItem(item: MediaItem | null): void {
 function handleTransition(item: MediaItem | null): void {
   clearPlaybackFault();
   cancelNetworkRetry();
+  networkRetries = 0;
   listenedId = null;
   rememberItem(item);
   saveQueueSnapshot();
@@ -55,6 +57,11 @@ function handleTransition(item: MediaItem | null): void {
 
 /** Il player si e' rimesso a caricare: l'errore precedente e' superato. */
 function handleStateChanged({ state }: PlayerEvents['playbackStateChanged']): void {
+  if (state === 'ended' && isLiveRadioId(player.getActiveMediaItem()?.mediaId)) {
+    markPlaybackFault();
+    scheduleNetworkRetry();
+    return;
+  }
   if (state !== 'idle') clearPlaybackFault();
 }
 
@@ -64,6 +71,7 @@ function handleStateChanged({ state }: PlayerEvents['playbackStateChanged']): vo
  * cronologia. Non al cambio di brano: un brano saltato non è un ascolto.
  */
 function handleProgress({ mediaId, position, duration }: PlayerEvents['progressUpdated']): void {
+  if (isLiveRadioId(mediaId)) return;
   savePosition(mediaId, position);
   if (!mediaId || listenedId === mediaId) return;
   if (!reachedListen(position, duration)) return;
@@ -79,7 +87,7 @@ function handlePlaybackError(error: PlayerEvents['playbackError']): void {
   console.warn(`[player] ${error.code}: ${error.message}`);
 
   const decision = decideSkip({ code: error.code, skipsUsed: sourceSkips });
-  if (decision !== 'salta') {
+  if (decision !== 'salta' || isLiveRadioId(player.getActiveMediaItem()?.mediaId)) {
     markPlaybackFault();
     if (error.code === 'network') scheduleNetworkRetry();
     return;

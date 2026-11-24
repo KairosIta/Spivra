@@ -21,6 +21,7 @@ export interface NativeMediaItemInput {
   artist?: string;
   artworkUrl?: string;
   duration?: number;
+  mimeType?: string;
   /** Gli `extras` del contratto, come JSON: restano nel processo, intatti. */
   extras?: string;
 }
@@ -34,6 +35,7 @@ export interface NativeMediaItem {
   artist: string | null;
   artworkUrl: string | null;
   duration: number | null;
+  liveTitle?: string | null;
   extras: string | null;
 }
 

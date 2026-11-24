@@ -13,6 +13,7 @@ import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.Metadata
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.Timeline
@@ -23,6 +24,8 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.datasource.HttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.extractor.metadata.icy.IcyInfo
+import androidx.media3.extractor.metadata.id3.TextInformationFrame
 import androidx.media3.session.MediaController
 import androidx.media3.session.MediaLibraryService.MediaLibrarySession
 import androidx.media3.session.SessionToken
@@ -86,6 +89,10 @@ internal object PlaybackCore {
   private var progressIntervalMs = 5_000L
   private val sleepTimer = SleepTimer(SystemClock::elapsedRealtime)
   private var pendingRetry: Runnable? = null
+  private var liveTitle: String? = null
+  private var radioMode = false
+
+  private fun MediaItem?.isRadio() = this?.mediaMetadata?.mediaType == MediaMetadata.MEDIA_TYPE_RADIO_STATION
 
   /**
    * L'app e' stata tolta dai recenti: la musica si e' fermata e non deve
@@ -237,6 +244,7 @@ internal object PlaybackCore {
     if (stoppedByUser) return
     val p = player ?: return
     bindService()
+    if (p.currentMediaItem.isRadio() && p.playbackState == Player.STATE_ENDED) retry()
     if (p.playbackState == Player.STATE_IDLE && p.mediaItemCount > 0) p.prepare()
     p.play()
   }
@@ -247,7 +255,8 @@ internal object PlaybackCore {
   }
 
   fun seekTo(seconds: Double) {
-    player?.seekTo((seconds * 1000).toLong())
+    val p = player ?: return
+    if (p.currentMediaItem.isRadio()) p.seekToDefaultPosition() else p.seekTo((seconds * 1000).toLong())
   }
 
   fun skipToNext() {
@@ -281,6 +290,12 @@ internal object PlaybackCore {
   /** Dopo un errore il player e' fermo in `idle`: lo si riprepara, senza ripartire. */
   fun retry() {
     val p = player ?: return
+    if (p.currentMediaItem.isRadio() && (p.playerError != null || p.playbackState == Player.STATE_ENDED)) {
+      p.stop()
+      p.seekToDefaultPosition()
+      p.prepare()
+      return
+    }
     if (p.playerError == null) return
     p.playWhenReady = false
     p.prepare()
@@ -311,7 +326,9 @@ internal object PlaybackCore {
    * deve aprire servizio e notifica ne' scaricare niente.
    */
   fun setMediaItems(items: List<MediaItem>, startIndex: Int) {
-    ensurePlayer().setMediaItems(items, startIndex.coerceIn(0, maxOf(items.size - 1, 0)), 0)
+    val index = startIndex.coerceIn(0, maxOf(items.size - 1, 0))
+    val start = if (items.getOrNull(index).isRadio()) C.TIME_UNSET else 0L
+    ensurePlayer().setMediaItems(items, index, start)
   }
 
   fun insertMediaItems(index: Int, items: List<MediaItem>) {
@@ -337,12 +354,12 @@ internal object PlaybackCore {
 
   fun setRepeatMode(mode: Int) {
     prefs.repeatMode = mode
-    player?.repeatMode = mode
+    if (!radioMode) player?.repeatMode = mode
   }
 
   fun setShuffleModeEnabled(enabled: Boolean) {
     prefs.shuffle = enabled
-    player?.shuffleModeEnabled = enabled
+    if (!radioMode) player?.shuffleModeEnabled = enabled
   }
 
   fun sleepAfter(seconds: Double) {
@@ -364,7 +381,10 @@ internal object PlaybackCore {
 
   fun activeIndex(): Int? = player?.takeIf { it.mediaItemCount > 0 }?.currentMediaItemIndex
 
-  fun activeItem(): Map<String, Any?>? = player?.currentMediaItem?.let(ItemCodec::toJs)
+  fun activeItem(): Map<String, Any?>? = player?.currentMediaItem?.let {
+    val item = ItemCodec.toJs(it)
+    if (it.isRadio()) item + ("liveTitle" to liveTitle) else item
+  }
 
   fun progress(): Map<String, Double> {
     val p = player ?: return mapOf("position" to 0.0, "duration" to 0.0, "buffered" to 0.0)
@@ -459,6 +479,14 @@ internal object PlaybackCore {
         if (playWhenReady) stoppedByUser = false else cancelRetry()
         playWhenReadyNow = playWhenReady
         emit("playWhenReadyChanged", "playWhenReady" to playWhenReady)
+        val p = player ?: return
+        if (p.currentMediaItem.isRadio() && !playWhenReady && reason == Player.PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST) {
+          // Rilascia anche lo stream progressivo: il prossimo play si collega all'onda corrente.
+          p.stop()
+          p.seekToDefaultPosition()
+          liveTitle = null
+          emit("mediaMetadataChanged")
+        }
       }
 
       override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -482,11 +510,34 @@ internal object PlaybackCore {
 
       override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
         cancelRetry()
+        liveTitle = null
+        val radio = mediaItem.isRadio()
+        if (radio != radioMode) {
+          radioMode = radio
+          player?.repeatMode = if (radio) Player.REPEAT_MODE_OFF else prefs.repeatMode
+          player?.shuffleModeEnabled = !radio && prefs.shuffle
+        }
         emit("mediaItemTransition", "item" to mediaItem?.let(ItemCodec::toJs))
       }
 
       override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) {
         emit("mediaMetadataChanged")
+      }
+
+      override fun onMetadata(metadata: Metadata) {
+        if (player?.currentMediaItem.isRadio()) {
+          for (i in 0 until metadata.length()) {
+            val title = when (val entry = metadata[i]) {
+              is IcyInfo -> entry.title
+              is TextInformationFrame -> if (entry.id == "TIT2") entry.values.firstOrNull() else null
+              else -> null
+            } ?: continue
+            if (title != liveTitle) {
+              liveTitle = title
+              emit("mediaMetadataChanged")
+            }
+          }
+        }
       }
 
       override fun onTimelineChanged(timeline: Timeline, reason: Int) {

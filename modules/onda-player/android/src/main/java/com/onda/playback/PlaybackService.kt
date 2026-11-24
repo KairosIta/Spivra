@@ -9,6 +9,8 @@ import android.util.Log
 import androidx.annotation.OptIn
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
+import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.LibraryResult
@@ -27,6 +29,19 @@ import com.google.common.util.concurrent.ListenableFuture
  */
 class PlaybackService : MediaLibraryService() {
   private var session: MediaLibrarySession? = null
+  private var radioControls = false
+  private val transport = object : Player.Listener {
+    override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+      val radio = mediaItem?.mediaMetadata?.mediaType == MediaMetadata.MEDIA_TYPE_RADIO_STATION
+      if (radio == radioControls) return
+      radioControls = radio
+      val current = session ?: return
+      for (controller in current.connectedControllers) {
+        val result = connection(current, controller)
+        current.setAvailableCommands(controller, result.availableSessionCommands, result.availablePlayerCommands)
+      }
+    }
+  }
 
   override fun onCreate() {
     super.onCreate()
@@ -50,6 +65,8 @@ class PlaybackService : MediaLibraryService() {
         .setSessionActivity(openPlayer())
         .build()
     session = librarySession
+    radioControls = librarySession.player.currentMediaItem?.mediaMetadata?.mediaType == MediaMetadata.MEDIA_TYPE_RADIO_STATION
+    librarySession.player.addListener(transport)
     PlaybackCore.session = librarySession
     addSession(librarySession)
   }
@@ -73,6 +90,7 @@ class PlaybackService : MediaLibraryService() {
   }
 
   override fun onDestroy() {
+    session?.player?.removeListener(transport)
     session?.release()
     session = null
     PlaybackCore.onServiceDestroyed()
@@ -120,18 +138,21 @@ class PlaybackService : MediaLibraryService() {
       session.isAutoCompanionController(controller) ||
       session.isAutomotiveController(controller)
 
+  private fun connection(session: MediaSession, controller: MediaSession.ControllerInfo): MediaSession.ConnectionResult {
+    val commands = MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS.buildUpon()
+    RemoteCommands.withheld(PlaybackCore.remoteCommands(), canBrowse(session, controller), radioControls)
+      .forEach { commands.remove(it) }
+    return MediaSession.ConnectionResult.AcceptedResultBuilder(session, controller)
+      .setAvailablePlayerCommands(commands.build()).build()
+  }
+
   private inner class LibraryCallback : MediaLibrarySession.Callback {
     override fun onConnect(
       session: MediaSession,
       controller: MediaSession.ControllerInfo,
     ): MediaSession.ConnectionResult {
       if (!isOurs(session, controller)) return MediaSession.ConnectionResult.reject()
-      val result = MediaSession.ConnectionResult.AcceptedResultBuilder(session, controller)
-      val commands = MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS.buildUpon()
-      RemoteCommands.withheld(PlaybackCore.remoteCommands(), canBrowse(session, controller))
-        .forEach { commands.remove(it) }
-      result.setAvailablePlayerCommands(commands.build())
-      return result.build()
+      return connection(session, controller)
     }
 
     override fun onGetLibraryRoot(

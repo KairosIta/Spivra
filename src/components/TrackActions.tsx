@@ -1,13 +1,16 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PressableScale } from '@/components/PressableScale';
+import { RadioSuggestions } from '@/components/RadioSuggestions';
 import type { Snack } from '@/components/Snackbar';
 import { useQueue } from '@/hooks/useQueue';
 import { haptics } from '@/services/haptics';
+import { sourceById } from '@/services/sources';
 import { SOURCE_META } from '@/services/sources/meta';
+import { TRACK_PLAYLIST_TITLE } from '@/services/sources/trackRadio';
 import {
   addToPlaylist,
   createPlaylist,
@@ -16,7 +19,7 @@ import {
   useLibrary,
 } from '@/store/library';
 import { useSources } from '@/store/sources';
-import { colors, radius, spacing, type } from '@/theme';
+import { colors, radius, spacing, touch, type } from '@/theme';
 import type { Track } from '@/types/track';
 
 interface Props {
@@ -32,11 +35,10 @@ interface Props {
   fromPlaylistId?: string;
 }
 
-type Pane = 'menu' | 'playlists' | 'new';
+type Pane = 'menu' | 'playlists' | 'new' | 'radio';
 
 /**
- * Menu contestuale della traccia. Tre pannelli nello stesso foglio invece
- * di tre modali annidate: su Android le modali sovrapposte si chiudono a
+ * Menu contestuale della traccia. Pannelli nello stesso foglio: su Android le modali sovrapposte si chiudono a
  * catena e l'utente si ritrova alla schermata di partenza.
  */
 export function TrackActions({ track, onClose, onDone, fromPlaylistId }: Props) {
@@ -60,6 +62,8 @@ function TrackActionsSheet({
 }: Omit<Props, 'track'> & { track: Track }) {
   const [pane, setPane] = useState<Pane>('menu');
   const [name, setName] = useState('');
+  const adding = useRef(false);
+  const [queueError, setQueueError] = useState(false);
   const { playNext, addLast } = useQueue();
   const { playlists, favorites } = useLibrary();
   const { active } = useSources();
@@ -75,6 +79,27 @@ function TrackActionsSheet({
   };
 
   const openQueue = { label: 'Coda', onPress: () => router.push('/queue') };
+  async function queueTrack(command: (item: Track) => Promise<boolean>, message: string) {
+    if (adding.current) return;
+    adding.current = true;
+    let added: boolean;
+    try {
+      added = await command(track);
+    } catch {
+      adding.current = false;
+      setQueueError(true);
+      return;
+    }
+    if (added) {
+      haptics.success();
+      done(message, openQueue);
+    } else {
+      done(`${SOURCE_META[track.source].label} è spenta`, {
+        label: 'Sorgenti',
+        onPress: () => router.push('/sources'),
+      });
+    }
+  }
   const openPlaylist = (id: string) => ({
     label: 'Apri',
     onPress: () => router.push({ pathname: '/playlist/[id]', params: { id } }),
@@ -92,44 +117,73 @@ function TrackActionsSheet({
   const available = active[track.source];
 
   return (
-    <Modal visible transparent animationType="slide" onRequestClose={close}>
+    <Modal
+      visible
+      transparent
+      animationType="slide"
+      onRequestClose={pane === 'radio' ? () => setPane('menu') : close}
+    >
       <Pressable style={styles.backdrop} onPress={close} accessibilityLabel="Chiudi il menu" />
 
-      <View style={[styles.sheet, { paddingBottom: spacing.xxl + insets.bottom }]}>
+      <View
+        style={[
+          styles.sheet,
+          { paddingBottom: insets.bottom + (pane === 'radio' ? spacing.md : spacing.xxl) },
+        ]}
+      >
         <View style={styles.grabber} />
 
-        <View style={styles.head}>
-          <Text numberOfLines={1} style={styles.headTitle}>
-            {track.title}
-          </Text>
-          <Text numberOfLines={1} style={styles.headArtist}>
-            {track.artist}
-          </Text>
-        </View>
+        {pane === 'radio' ? (
+          <View style={styles.radioHeader}>
+            <Pressable
+              style={touch.target}
+              accessibilityRole="button"
+              accessibilityLabel="Torna alle opzioni del brano"
+              onPress={() => setPane('menu')}
+            >
+              <Ionicons name="arrow-back" size={22} color={colors.text} />
+            </Pressable>
+            <Text accessibilityRole="header" style={[styles.headTitle, styles.radioTitle]}>
+              {TRACK_PLAYLIST_TITLE}
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.head}>
+            <Text numberOfLines={1} style={styles.headTitle}>
+              {track.title}
+            </Text>
+            <Text numberOfLines={1} style={styles.headArtist}>
+              {track.artist}
+            </Text>
+          </View>
+        )}
 
         {pane === 'menu' ? (
-          <View>
+          <ScrollView keyboardShouldPersistTaps="handled">
+            {queueError ? (
+              <Text accessibilityLiveRegion="polite" style={styles.hint}>
+                Il player non è riuscito ad aggiungere il brano. Puoi riprovare.
+              </Text>
+            ) : null}
             {available ? (
               <>
+                {sourceById(track.source)?.radio ? (
+                  <Item
+                    icon="musical-notes-outline"
+                    label={TRACK_PLAYLIST_TITLE}
+                    chevron
+                    onPress={() => setPane('radio')}
+                  />
+                ) : null}
                 <Item
                   icon="play-forward-outline"
                   label="Riproduci dopo"
-                  onPress={() =>
-                    playNext(track).then(() => {
-                      haptics.success();
-                      done('Aggiunta dopo la traccia corrente', openQueue);
-                    })
-                  }
+                  onPress={() => queueTrack(playNext, 'Aggiunta dopo la traccia corrente')}
                 />
                 <Item
                   icon="list-outline"
                   label="Aggiungi in fondo alla coda"
-                  onPress={() =>
-                    addLast(track).then(() => {
-                      haptics.success();
-                      done('Accodata', openQueue);
-                    })
-                  }
+                  onPress={() => queueTrack(addLast, 'Accodata')}
                 />
               </>
             ) : (
@@ -200,7 +254,15 @@ function TrackActionsSheet({
                 }}
               />
             ) : null}
-          </View>
+          </ScrollView>
+        ) : null}
+
+        {pane === 'radio' ? (
+          available ? (
+            <RadioSuggestions seed={track} />
+          ) : (
+            <Text style={styles.hint}>{SOURCE_META[track.source].label} è spenta.</Text>
+          )
         ) : null}
 
         {pane === 'playlists' ? (
@@ -281,9 +343,10 @@ function Item({
       onPress={onPress}
       style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}
       accessibilityRole="button"
+      accessibilityLabel={detail ? `${label}, ${detail}` : label}
     >
       <Ionicons name={icon} size={20} color={tint ?? colors.textMuted} />
-      <Text numberOfLines={1} style={[styles.itemLabel, tint ? { color: tint } : null]}>
+      <Text numberOfLines={2} style={[styles.itemLabel, tint ? { color: tint } : null]}>
         {label}
       </Text>
       {detail ? <Text style={styles.itemDetail}>{detail}</Text> : null}
@@ -295,6 +358,7 @@ function Item({
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: '#000000AA' },
   sheet: {
+    maxHeight: '90%',
     backgroundColor: colors.surface,
     borderTopLeftRadius: radius.lg,
     borderTopRightRadius: radius.lg,
@@ -311,6 +375,13 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   head: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md, gap: 2 },
+  radioHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.sm,
+    gap: spacing.xs,
+  },
+  radioTitle: { flex: 1 },
   headTitle: { ...type.title, color: colors.text },
   headArtist: { ...type.caption, color: colors.textMuted },
   scroll: { maxHeight: 260 },

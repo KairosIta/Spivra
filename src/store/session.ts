@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { AppState } from 'react-native';
 import { type MediaItem, player } from '@/player';
+import { isLiveRadioId, stationMediaItem, type RadioStation } from '@/services/liveRadio';
 import { toMediaItem, trackFromMediaItem } from '@/services/mediaItems';
 import { type IsSourceActive, playableQueue } from '@/services/playableTracks';
 import { isSourceAvailable } from '@/services/sources/access';
@@ -62,6 +63,8 @@ const NOTHING: NowPlaying = { item: null, pending: false };
 
 let active: MediaItem | null = null;
 let pending: PendingSession | null = null;
+type MusicQueue = Pick<PendingSession, 'tracks' | 'index' | 'position'>;
+let beforeRadio: MusicQueue | null = null;
 let snapshot: NowPlaying = NOTHING;
 let started = false;
 const listeners = new Set<() => void>();
@@ -92,6 +95,14 @@ function setPending(next: PendingSession | null): void {
 }
 
 function setActive(next: MediaItem | null): void {
+  if (
+    beforeRadio &&
+    isLiveRadioId(active?.mediaId) &&
+    next &&
+    !isLiveRadioId(next.mediaId) &&
+    !isLiveRadioId(player.getActiveMediaItem()?.mediaId)
+  )
+    beforeRadio = null;
   active = next;
   // Un brano nel player mentre c'era una coda in attesa: e' la conferma
   // della consegna, oppure il controller connesso in ritardo con il suo
@@ -110,6 +121,68 @@ export function useNowPlaying(): NowPlaying {
   return useSyncExternalStore(subscribe, () => snapshot);
 }
 
+/** I brani restano consultabili e accodabili anche mentre il player suona una diretta. */
+export const getRadioMusicQueue = () => beforeRadio;
+export const useRadioMusicQueue = () => useSyncExternalStore(subscribe, getRadioMusicQueue);
+
+function storeRadioMusicQueue(queue: MusicQueue | null): void {
+  beforeRadio = queue;
+  const savedAt = Date.now();
+  writeJSON(QUEUE_KEY, queue && { tracks: queue.tracks, index: queue.index, savedAt });
+  writeJSON(
+    POSITION_KEY,
+    queue && {
+      uid: queue.tracks[queue.index].uid,
+      position: queue.position,
+      savedAt,
+      interruptedByRadio: true,
+    },
+  );
+  publish();
+}
+
+export function playStation(station: RadioStation): void {
+  const current = player.getActiveMediaItem();
+  if (!isLiveRadioId(current?.mediaId)) {
+    const queue = current ? readPlayerQueue() : pending;
+    storeRadioMusicQueue(
+      queue && {
+        tracks: queue.tracks,
+        index: queue.index,
+        position: current ? player.getProgress().position : (pending?.position ?? 0),
+      },
+    );
+  }
+  clearPending();
+  player.setMediaItems([stationMediaItem(station)], 0);
+  player.play();
+}
+
+/** Restituisce false quando nel frattempo tutti i brani sono diventati indisponibili. */
+export function resumeRadioMusic(): boolean {
+  if (!isLiveRadioId(player.getActiveMediaItem()?.mediaId)) return false;
+  const queue = beforeRadio;
+  const playable = queue && playableQueue(queue.tracks, queue.index, isSourceAvailable);
+  if (!queue || !playable) return false;
+  const sameTrack = queue.tracks[queue.index].uid === playable.tracks[playable.index].uid;
+  remember(playable.tracks);
+  player.setMediaItems(playable.tracks.map(toMediaItem), playable.index);
+  if (sameTrack && queue.position > 0) player.seekTo(queue.position);
+  player.play();
+  beforeRadio = null;
+  publish();
+  return true;
+}
+
+export function insertDuringRadio(tracks: Track[], next = false): boolean {
+  if (!isLiveRadioId(player.getActiveMediaItem()?.mediaId)) return false;
+  const queue = beforeRadio ?? { tracks: [], index: 0, position: 0 };
+  const updated = [...queue.tracks];
+  updated.splice(next ? queue.index + 1 : updated.length, 0, ...tracks);
+  if (updated.length) storeRadioMusicQueue({ ...queue, tracks: updated });
+  return true;
+}
+
 // --- salvataggio -----------------------------------------------------
 
 /**
@@ -120,10 +193,11 @@ export function useNowPlaying(): NowPlaying {
  * fermando il servizio (RNTP lo faceva, togliendo l'app dai recenti) non
  * deve portarsi via la sessione da riprendere all'avvio dopo.
  */
-export function saveQueueSnapshot(): void {
+function readPlayerQueue(): Pick<MusicQueue, 'tracks' | 'index'> | null {
   const items = player.getQueue();
   const activeIndex = player.getActiveIndex();
-  if (items.length === 0 || activeIndex === null) return;
+  if (items.length === 0 || activeIndex === null || isLiveRadioId(items[activeIndex]?.mediaId))
+    return null;
 
   const tracks: Track[] = [];
   let index = -1;
@@ -133,9 +207,13 @@ export function saveQueueSnapshot(): void {
     if (i === activeIndex) index = tracks.length;
     tracks.push(track);
   });
-  if (index < 0) return;
+  return index < 0 ? null : { tracks, index };
+}
 
-  writeJSON(QUEUE_KEY, { ...windowQueue(tracks, index), savedAt: Date.now() });
+export function saveQueueSnapshot(): void {
+  const queue = readPlayerQueue();
+  if (queue)
+    writeJSON(QUEUE_KEY, { ...windowQueue(queue.tracks, queue.index), savedAt: Date.now() });
 }
 
 /**
@@ -144,7 +222,9 @@ export function saveQueueSnapshot(): void {
  * pausa, a schermo spento compreso. Niente timer JS da tenere vivi.
  */
 export function savePosition(uid: string, position: number): void {
-  if (!uid || !Number.isFinite(position)) return;
+  if (!uid || isLiveRadioId(uid) || !Number.isFinite(position)) return;
+  // Un ultimo tick del brano può arrivare dopo il passaggio alla diretta.
+  if (beforeRadio && isLiveRadioId(player.getActiveMediaItem()?.mediaId)) return;
   writeJSON(POSITION_KEY, { uid, position, savedAt: Date.now() });
 }
 
@@ -156,7 +236,7 @@ export function savePosition(uid: string, position: number): void {
  * gia' il suo brano e non c'e' niente da riprendere.
  */
 export function restoreSession(): void {
-  if (active) return;
+  if (active && !isLiveRadioId(active.mediaId)) return;
 
   const saved = loadSavedQueue(readJSON(QUEUE_KEY), Date.now());
   if (!saved) return;
@@ -171,10 +251,20 @@ export function restoreSession(): void {
   // Serve al cuoricino e alla cronologia: risolvono l'uid dal catalogo
   // volatile, che a processo appena nato e' vuoto.
   remember(queue.tracks);
+  const position = loadSavedPosition(readJSON(POSITION_KEY));
+  if (isLiveRadioId(active?.mediaId)) {
+    beforeRadio = {
+      tracks: queue.tracks,
+      index: queue.index,
+      position: position?.uid === track.uid ? position.position : 0,
+    };
+    publish();
+    return;
+  }
   setPending({
     tracks: queue.tracks,
     index: queue.index,
-    position: resumePosition(queue, loadSavedPosition(readJSON(POSITION_KEY))),
+    position: resumePosition(queue, position),
     item: toMediaItem(track),
     loading: false,
   });
@@ -186,6 +276,19 @@ export function restoreSession(): void {
  * il guardiano direttamente nel player.
  */
 export function prunePending(isActive: IsSourceActive): void {
+  if (beforeRadio && isLiveRadioId(player.getActiveMediaItem()?.mediaId)) {
+    const queue = beforeRadio;
+    const kept = playableQueue(queue.tracks, queue.index, isActive);
+    if (kept?.tracks.length !== queue.tracks.length) {
+      storeRadioMusicQueue(
+        kept && {
+          ...kept,
+          position:
+            kept.tracks[kept.index].uid === queue.tracks[queue.index].uid ? queue.position : 0,
+        },
+      );
+    }
+  }
   if (!pending || pending.loading) return;
   const next = playableQueue(pending.tracks, pending.index, isActive);
   if (!next) {

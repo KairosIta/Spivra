@@ -8,8 +8,15 @@ import {
   type SourceTrackPage,
   type SpotlightKind,
   type Track,
+  type TrackRadioParams,
 } from '@/types/track';
 import { genreFor } from '../genres';
+import {
+  matchesDuration,
+  parseTrackSearch,
+  rankSearchTracks,
+  type TrackSearch,
+} from '../trackSearch';
 import { isSourceAvailable } from './access';
 import { audiusSource } from './audius';
 import {
@@ -42,6 +49,10 @@ export const SOURCES: Record<SourceId, MusicSource> = {
  */
 export const sourceById = (id: string): MusicSource | undefined =>
   isSourceId(id) && isSourceAvailable(id) ? SOURCES[id] : undefined;
+
+export async function trackRadio(seed: Track, params: TrackRadioParams = {}): Promise<Track[]> {
+  return sourceById(seed.source)?.radio?.(seed, params) ?? [];
+}
 
 const active = (): MusicSource[] =>
   (Object.keys(SOURCES) as SourceId[]).filter(isSourceAvailable).map((id) => SOURCES[id]);
@@ -94,6 +105,7 @@ async function paginate(
   sources: readonly MusicSource[],
   { limit = 20, cursor, signal }: PageParams,
   call: (s: MusicSource, page: ListParams) => Promise<SourceTrackPage>,
+  maxPagesPerSource = Infinity,
 ): Promise<FederatedPage> {
   if (!Number.isSafeInteger(limit) || limit <= 0) throw new Error('Limite di pagina non valido');
   const from = resolveCursor(
@@ -104,9 +116,9 @@ async function paginate(
     sources.filter((s) => from[s.id] !== undefined),
     async (s) => {
       let offset = from[s.id]!;
-      for (;;) {
+      for (let pagesRead = 1; ; pagesRead++) {
         const result = await call(s, { limit, offset, signal });
-        if (result.tracks.length > 0 || !result.hasMore) {
+        if (result.tracks.length > 0 || !result.hasMore || pagesRead >= maxPagesPerSource) {
           // Ogni sorgente aggiorna solo il proprio offset, e solo dopo un
           // successo: un errore lascia il cursore al punto da ritentare.
           from[s.id] = offset;
@@ -132,8 +144,29 @@ async function paginate(
   return { ...combined, next: advanceCursor(from, outcomes, limit) };
 }
 
-export const searchAll = (query: string, page: PageParams = {}): Promise<FederatedPage> =>
-  paginate(active(), page, (s, list) => s.search({ query, ...list }));
+export async function searchAll(
+  input: string | TrackSearch,
+  page: PageParams = {},
+): Promise<FederatedPage> {
+  const search = typeof input === 'string' ? parseTrackSearch(input) : input;
+  const { duration } = search;
+  const result = await paginate(
+    active(),
+    page,
+    async (source, list) => {
+      const raw = await source.search({ ...search, ...list });
+      if (!duration) return raw;
+      return {
+        ...raw,
+        tracks: raw.tracks.filter((track) => matchesDuration(track.durationSec, duration)),
+      };
+    },
+    // Con una durata rara possono esserci molte pagine senza corrispondenze.
+    // Dopo tre per sorgente, la schermata offre di continuare dal cursore.
+    duration ? 3 : undefined,
+  );
+  return { ...result, tracks: rankSearchTracks(result.tracks, search.query) };
+}
 
 export const trendingAll = ({
   genreKey,

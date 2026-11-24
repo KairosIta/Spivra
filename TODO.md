@@ -1,7 +1,6 @@
 # Roadmap di Spivra
 
-Stato aggiornato il **17 novembre 2026**, dopo il passaggio a Spivra e la
-verifica di codice, configurazione e collaudi registrati.
+Ultimo aggiornamento il **22 novembre 2026**, con la revisione di Cerca, di **Playlist da questo brano** e l'arrivo della **radio in diretta**.
 
 Qui restano le voci aperte. Le prove datate (la baseline) e le voci chiuse,
 ciascuna con la sua evidenza, stanno nel
@@ -40,6 +39,9 @@ passa nel registro dei collaudi con la sua prova.
 - [x] Catalogo federato Audius + Jamendo, alternato invece che concatenato.
 - [x] Trending, 13 filtri per genere e scroll infinito.
 - [x] Ricerca federata con debounce e paginazione.
+- [x] Ordinamento per titolo, artista e versione, con durata selezionabile.
+      **Playlist da questo brano** propone fino a cinque corrispondenze della
+      durata scelta. Il collaudo del 22 novembre è nel registro.
 - [x] Risultati parziali se cade una sola sorgente; errore recuperabile con
       **Riprova** se cadono entrambe.
 - [x] Pagine artista su Audius e Jamendo, con biografia/dettagli quando
@@ -54,16 +56,13 @@ passa nel registro dei collaudi con la sua prova.
       sono stati verificati i due cataloghi nelle vetrine il 9 settembre e
       lo swipe del nuovo carosello il 16 novembre 2026. Le prove in dettaglio
       sono nel registro dei collaudi.
-- [ ] Ricerca di artisti e album oltre ai brani, con le ultime otto ricerche
-      da rifare con un tocco. **Collaudato in parte il 9 settembre 2026**:
-      «love» mostra artisti di entrambe le sorgenti, album Jamendo e brani, il
-      tocco su un artista apre la sua pagina e la ricerca recente compare a
-      casella vuota con Cancella; restano da provare il nuovo tocco su una
-      ricerca recente e una ricerca con artisti ma senza brani.
-      Implementazione: `/users/search` su Audius, `/artists` e `/albums` con
-      `namesearch` su Jamendo; Audius non cerca album e la vetrina resta
-      solo Jamendo senza avvisi. Le ricerche si ricordano solo quando hanno
-      trovato qualcosa (`utils/recentQueries`, tre test).
+- [x] Ricerca di artisti e album oltre ai brani, con le ultime otto ricerche
+      da rifare con un tocco. Il 9 settembre 2026 «love» ha mostrato artisti
+      di entrambe le sorgenti, album Jamendo e brani. Il tocco su un artista
+      ha aperto la sua pagina. Il 22 novembre sul Samsung è stata riaperta
+      una ricerca recente con l'intervallo originale, anche quando la durata
+      esatta lasciava risultati solo in **Artisti e album**. La prova è nel
+      [registro dei collaudi](docs/VERIFICATION_LOG.md).
 - [ ] Apertura senza attese: trending, pagine artista e album consultate di
       recente tornano da disco prima del primo render e si rinfrescano in
       background. **Implementato il 9 settembre 2026, da collaudare**: la cache
@@ -81,6 +80,37 @@ passa nel registro dei collaudi con la sua prova.
       ottobre 2026 su device (vedi il registro dei collaudi): migrazione
       eseguita sui dati esistenti, vetrina riaperta a rete spenta con i soli
       brani Jamendo e completa con la rete.
+
+### Radio in diretta
+
+- [x] Dieci emittenti italiane in evidenza in **Scopri › Radio in diretta**
+      (m2o, Radio Ibiza, Radio Italia, Virgin Radio, RTL 102.5, RDS, Radio
+      Deejay, Radio 105, Rai Radio 1 e Radio Capital), identificate da UUID
+      stabili anche quando cambia l'URL dello stream, con le grafiche
+      ufficiali caricate dai siti delle emittenti. La ricerca per nome o
+      genere consulta il catalogo comunitario Radio Browser e le stazioni
+      preferite restano salvate sul telefono. Collaudato il 22 novembre 2026
+      sul Galaxy A13: grafiche delle dieci emittenti visibili, griglia a due
+      colonne al 100% e a una al 160% di scala del testo, cuore con
+      bersaglio da 48 × 48 dp, salvarlo non avvia la diretta, la ricerca
+      «jazz» mostra le stazioni del catalogo. La prova è nel
+      [registro dei collaudi](docs/VERIFICATION_LOG.md).
+- [x] Riproduzione delle dirette in HLS o MP3 con pausa e ripresa dai
+      controlli Android, persistenza a schermo spento, riavvio automatico
+      dopo un errore di rete e titolo del brano in onda dai metadati ICY/ID3.
+      In modalità radio niente seek, shuffle o ripetizione
+      (`MEDIA_TYPE_RADIO_STATION` nel modulo Media3). Collaudato il 22
+      novembre 2026 sul Galaxy A13: tutte le dieci dirette in riproduzione,
+      pausa e riavvio di RTL 102.5 dai controlli, a schermo spento la
+      sessione resta attiva, senza Wi-Fi l'errore compare dopo circa 12 s e
+      la diretta riparte da sola dopo circa 24 s dal ritorno della rete. La
+      prova è nel [registro dei collaudi](docs/VERIFICATION_LOG.md).
+- [x] **Riprendi la mia coda**: durante una diretta la coda musicale resta
+      consultabile e accodabile, viene parcheggiata con la posizione di
+      ascolto (`interruptedByRadio`) e torna al brano e al secondo esatti.
+      Collaudato il 22 novembre 2026: durante m2o il pulsante riportava al
+      brano precedente a 0:57 su 3:06. La prova è nel
+      [registro dei collaudi](docs/VERIFICATION_LOG.md).
 
 ### Riproduzione
 
@@ -758,8 +788,13 @@ nella checklist, compresi il focus audio, la coda, shuffle e ripetizione.
 - [ ] **Offline**, solo per sorgenti e licenze che lo consentono. I termini
       Jamendo vietano applicazioni progettate per offrire accesso offline: quella
       sorgente resta esclusa salvo accordo dedicato.
-- [ ] **Radio e continua ad ascoltare** tramite related Audius, con fallback
-      chiaro e senza coda infinita opaca.
+- [ ] **Ricerche salvate** per ritrovare un genere e la sua durata anche
+      dopo che sono usciti dalle otto ricerche recenti.
+- [ ] **Segnalibri nei mix** per salvare più punti di ascolto in un brano lungo.
+- [ ] **Sessione a tempo** per comporre una coda vicina alla durata totale scelta.
+- [ ] **Shuffle con più varietà tra artisti** per distanziare i brani dello
+      stesso artista dove la coda lo permette.
+- [ ] **Continua ad ascoltare** quando la coda finisce, su scelta della persona.
 - [ ] **Playlist pubbliche Audius** con pagine autore e raccolta.
 - [ ] **Terza sorgente** dopo aver generalizzato `SourceId`, licenze, refresh
       stream, cursori e fallback. Dal 10 ottobre 2026 `SourceId`, licenze e

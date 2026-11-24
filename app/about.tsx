@@ -78,6 +78,14 @@ export default function AboutScreen() {
         </Text>
         <ExternalLink label="Privacy Audius" url={AUDIUS_PRIVACY_URL} />
         <ExternalLink label="Privacy Jamendo" url={JAMENDO_PRIVACY_URL} />
+        <Text style={styles.body}>
+          In Radio in diretta, Radio Browser riceve le ricerche, le richieste di aggiornamento delle
+          stazioni e la scelta dell’emittente per il suo contatore. L’audio arriva dal fornitore
+          della diretta. Le grafiche delle stazioni in evidenza arrivano dai siti delle emittenti o
+          dai loro fornitori di immagini e restano solo in memoria. Le preferite si salvano sul
+          telefono.
+        </Text>
+        <ExternalLink label="Catalogo Radio Browser" url="https://www.radio-browser.info/" />
       </View>
 
       <View style={styles.section}>

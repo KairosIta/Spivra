@@ -111,6 +111,7 @@ export function createMedia3Backend(native: NativePlayer, appState: AppStateLike
       artist: item.artist,
       artworkUrl: item.artworkUrl,
       duration: item.duration,
+      mimeType: item.mimeType,
       extras: item.extras === undefined ? undefined : JSON.stringify(item.extras),
     };
   }
@@ -277,7 +278,9 @@ export function createMedia3Backend(native: NativePlayer, appState: AppStateLike
     getQueue: readQueue,
     getActiveMediaItem: () => {
       const item = native.getActiveMediaItem();
-      return item && fromNative(item);
+      if (!item) return null;
+      const base = fromNative(item);
+      return item.liveTitle ? { ...base, liveTitle: item.liveTitle } : base;
     },
     getActiveIndex: () => native.getActiveIndex(),
     getProgress: () => {

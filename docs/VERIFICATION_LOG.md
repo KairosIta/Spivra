@@ -15,6 +15,131 @@ RNTP anteriori alla sostituzione dell'11 ottobre 2026 non certificano Media3.
 
 ## Baseline verificata
 
+### 22 novembre 2026 — Grafiche ufficiali della radio sul Galaxy A13
+
+Sul Samsung Galaxy A13 sono visibili le grafiche delle dieci emittenti in
+evidenza. Alla scala del testo di sistema del 100% la griglia mostra due
+colonne. Al 160% passa a una colonna e torna a due ripristinando la scala
+iniziale. Il cuore di Radio Ibiza ha un bersaglio da 48 × 48 dp. Salvarla
+la sposta nelle preferite senza avviare la diretta e toglierla la riporta
+in evidenza. La ricerca per `jazz` mostra le stazioni del catalogo in righe
+a tutta larghezza.
+
+La sessione Android ha riprodotto m2o. Il banner del player e la miniatura
+del mini-player mostrano il marchio di m2o. Il comando di pausa funziona e
+**Riprendi la mia coda** indica ancora il brano precedente a 0:57. La build
+ha superato 301 test JavaScript, TypeScript, ESLint, Prettier, i controlli
+del player Android (32 test Kotlin) e Android Lint. L’APK installato sul
+Samsung e il file personale hanno lo stesso SHA-256
+(`84cf8c14c411333bfdde972f419ad633464ed5a0cf4770107df10a5cfbf409b5`).
+
+### 22 novembre 2026 — Radio in diretta sul Galaxy A13
+
+Sul Galaxy A13 la sessione Android è entrata in riproduzione per tutte le
+dieci dirette di Scopri. Oltre a m2o, Radio Ibiza di Napoli, Radio Italia,
+Virgin Radio e RTL 102.5, sono state provate RDS, Radio Deejay, Radio 105,
+Rai Radio 1 e Radio Capital. Il cuore di Radio Ibiza è rimasto selezionato
+dopo l’aggiornamento. La ricerca per `jazz` ha mostrato altre emittenti italiane.
+Nel player della diretta i controlli Android hanno messo in pausa e riavviato
+RTL 102.5. A schermo spento la sessione è rimasta in riproduzione. Sul Samsung
+senza SIM, disattivando il Wi-Fi è comparso un errore dopo circa 12 secondi.
+Al ritorno della rete la diretta è ripartita da sola dopo circa 24 secondi.
+**Riprendi la mia coda** ha riportato allo stesso brano a 0:57 su 3:06.
+La build personale ha superato 298 test JavaScript e 32 test Kotlin. L’APK
+installato e il file locale hanno lo stesso SHA-256
+(`f4532b0c685a54e4f5048ca8bd3018191f1b52c68e4de16c5732a3dba5a4438d`).
+
+### 22 novembre 2026 — Playlist da questo brano sul Galaxy A13
+
+Il nuovo nome compare nelle opzioni di un risultato, nel menu del player,
+nel titolo del pannello dei suggerimenti e nella spiegazione del filtro durata.
+Sul Samsung il pulsante del menu espone l’etichetta accessibile completa.
+Con `deep house da 4 a 7 minuti` il pannello mostrava l’intervallo scelto,
+cinque suggerimenti e **Accoda 5 brani**. L’APK installato corrisponde alla
+build personale (SHA-256 `f12986cefc2f6a6737e3dace9b3e96131258acdf530ba732f3770c0013ec8ce1`).
+
+### 22 novembre 2026 — Ordine dei caricamenti live e remix
+
+Nei test di Cerca, fra due copie dello stesso live o remix, quella da 4:32
+precede l’estratto da 0:24. Con `anteprima` la copia breve passa avanti.
+Una prova su due pagine verifica anche la posizione di un remix diverso e
+di un caricamento con durata sconosciuta.
+
+La build ha superato 290 test Node, 31 test JVM, TypeScript, ESLint, Prettier
+e Android Lint. Sul Galaxy A13 entrambe le ricerche `jazz live` e `remix preview`
+hanno mostrato risultati. Sul Motorola Edge 50 Neo è stato verificato l’avvio.
+Su entrambi i telefoni l’APK installato ha lo stesso SHA-256 della build
+personale (`bb2bb274f85afef0518b56e54793f685e9b3f5062a96b21868952835ae93b150`).
+
+### 22 novembre 2026 — Cerca e Radio, confronto visivo sul Galaxy A13
+
+Con la stessa ricerca su Android 14, la **×** del filtro ha tolto la durata
+da `deep house da 4 a 7 minuti` lasciando `deep house` nel campo. È stato
+possibile passare a 5–8 minuti compilando i due limiti a tastiera aperta.
+Durante la modifica la scelta rapida precedente ha perso la spunta.
+Con i caratteri di Android al 150% le quattro scelte rapide sono passate
+a una colonna e i due campi con il pulsante **Applica intervallo** erano
+raggiungibili. Scorrendo la radio ingrandita si raggiungevano tutti e cinque
+i suggerimenti con il comando di coda sempre visibile. Dopo la prova è
+stata ripristinata la dimensione iniziale.
+
+Nel confronto prima e dopo si è aperta la radio dello stesso risultato
+Audius di `deep house da 4 a 7 minuti`. La build finale ha mostrato gli
+stessi cinque brani, con copertine e durate da 4:27 a 5:21. A dimensione
+standard i quattro pulsanti del filtro avevano la stessa altezza e tutte
+le etichette occupavano una riga. L'APK sul Samsung corrisponde alla build
+personale locale (SHA-256 `c7dcb1b660196d54643e0c81626b6f05927eec1ed85afea973a2b8952ac4b930`).
+
+Sul Samsung, la radio del primo risultato da 5–8 minuti ha mostrato le
+copertine, i titoli su due righe e cinque durate comprese fra 5:15 e 5:50.
+Dopo un'aggiunta singola, **Accoda 5 brani** è diventato **Accoda 4 brani**.
+Dopo il tocco su quel pulsante, **Tutti in coda** risultava disabilitato e
+le cinque spunte erano presenti anche riaprendo la radio. Nella coda del
+player sono stati verificati artista, durata e ordine dei cinque brani.
+Le sole aggiunte del collaudo sono state rimosse.
+
+La build personale ha superato 287 test Node, 31 test JVM, TypeScript,
+ESLint, Prettier e Android Lint. Le nuove prove automatiche coprono il
+doppio tocco, una sorgente disattivata, il nuovo tentativo dopo un
+inserimento mancato e la coda ripristinata con la sua posizione di ascolto.
+
+### 22 novembre 2026 — filtro visibile in Cerca sul Samsung Galaxy A13
+
+Sul Galaxy A13 con Android 14, Cerca presenta il filtro **Durata dei brani**
+e i due esempi prima di digitare. Toccando `deep house da 4 a 7 minuti` sono
+comparsi brani da 4:15 e 4:44. Un minimo di 8 con un massimo di 7 ha
+disabilitato **Applica intervallo**. Chiudendo il pannello è rimasta attiva
+la scelta precedente.
+
+Nel primo collaudo la tastiera Samsung copriva il campo **Massimo**. Con il
+pannello nella finestra principale di Android è stato possibile toccare e
+compilare entrambi i campi e applicare 5–8 minuti a tastiera aperta. Nei
+risultati era visibile un brano da 5:51. La sua radio ha restituito cinque
+suggerimenti da 5:15, 5:24, 5:20, 5:36 e 5:50.
+
+Il tocco sulla ricerca recente `deep house, da 5 a 8 minuti` ha ripristinato
+l'intervallo. L'esempio `jazz live` ha poi riaperto la ricerca a durata
+libera. Cercando `deep house da 57 a 57 minuti` nei cataloghi reali, la
+sezione **Artisti e album** si apriva anche con zero brani nelle pagine
+caricate. La ricerca è comparsa nelle recenti e il tocco ha ripristinato
+anche quell'intervallo esatto.
+
+Una prova del menu con risposte simulate del player ha verificato il recupero
+dopo un errore, l'avviso per la sorgente disattivata e una sola aggiunta in
+coda con un doppio tocco. La build personale ha superato 284 test Node, 31
+test JVM, TypeScript, ESLint, Prettier e Android Lint. L'APK installato sul
+Samsung ha lo stesso SHA-256 della build locale.
+
+### 22 novembre 2026 — ricerca per durata e radio
+
+Sul Motorola Edge 50 Neo, dalla ricerca `deep house da 4 a 7 minuti`, la
+radio ha restituito cinque brani Audius da 4:27 a 5:21. Per il primo
+risultato Jamendo i simili diretti e il catalogo dell'artista davano
+zero corrispondenze. La ricerca aggiuntiva per tag del brano ha restituito
+cinque suggerimenti da 4:04 a 5:00 sullo stesso risultato. La build
+personale ha superato 282 test Node e 31 test JVM del player, TypeScript,
+ESLint, Prettier e Android Lint.
+
 ### 17 novembre 2026 — rifiniture Spivra e collaudi Android
 
 Aggiornati i messaggi Gradle e l'icona della notifica Media3, che usa la S

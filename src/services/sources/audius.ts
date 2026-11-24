@@ -9,10 +9,11 @@ import {
   type Track,
   type TrendingParams,
 } from '@/types/track';
-import { nonEmptyString } from '@/utils/validate';
+import { nonEmptyString, optionalString } from '@/utils/validate';
 import { currentCredentials } from './access';
 import { fetchJSON as httpJSON } from './http';
 import { SOURCE_META } from './meta';
+import { collectRadioTracks, type RadioPage } from './trackRadio';
 
 const BASE = 'https://api.audius.co/v1';
 const STREAM_ROUTE = /^\/tracks\/[^/?#\\\s]+\/stream\?/u;
@@ -22,6 +23,9 @@ interface AudiusTrack {
   id: string;
   title: string;
   duration: number;
+  genre?: string | null;
+  mood?: string | null;
+  bpm?: number | null;
   is_streamable?: boolean;
   is_stream_gated?: boolean;
   permalink?: string;
@@ -93,7 +97,7 @@ function mapTrack(t: AudiusTrack): Track {
     source: 'audius',
     id: t.id,
     title: t.title,
-    artist: t.user?.name || t.user?.handle || 'Sconosciuto',
+    artist: optionalString(t.user?.name) ?? optionalString(t.user?.handle) ?? 'Sconosciuto',
     artworkUrl: t.artwork?.['480x480'] ?? t.artwork?.['150x150'],
     // Audius espone anche 1000x1000: e' quella che serve al player, dove
     // l'immagine occupa tutta la larghezza dello schermo.
@@ -156,13 +160,30 @@ function fetchJSON<T>(url: string, signal?: AbortSignal): Promise<T> {
   });
 }
 
-async function fetchTracks(url: string, signal?: AbortSignal): Promise<SourceTrackPage> {
+async function fetchTracks(
+  url: string,
+  signal?: AbortSignal,
+  rank?: (track: AudiusTrack) => number,
+): Promise<SourceTrackPage> {
   const json = await fetchJSON<{ data?: AudiusTrack[] }>(url, signal);
   const data = Array.isArray(json.data) ? json.data : [];
+  const tracks = data.filter((t) => usable(t) && playable(t));
+  if (rank) tracks.sort((a, b) => rank(b) - rank(a));
   return {
-    tracks: data.filter((t) => usable(t) && playable(t)).map(mapTrack),
+    tracks: tracks.map(mapTrack),
     hasMore: data.length > 0,
   };
+}
+
+function radioRank(seed: AudiusTrack, candidate: AudiusTrack): number {
+  const mood = nonEmptyString(seed.mood) && candidate.mood === seed.mood ? 2 : 0;
+  const bpm = seed.bpm;
+  const other = candidate.bpm;
+  const tempo =
+    typeof bpm === 'number' && bpm > 0 && typeof other === 'number' && other > 0
+      ? 1 / (1 + Math.abs(bpm - other))
+      : 0;
+  return mood + tempo;
 }
 
 export const audiusSource: MusicSource = {
@@ -171,6 +192,35 @@ export const audiusSource: MusicSource = {
 
   async search({ query, ...rest }: SearchParams): Promise<SourceTrackPage> {
     return fetchTracks(withAppName('/tracks/search', { query, ...page(rest) }), rest.signal);
+  },
+
+  async radio(seed, params) {
+    // Anche le tracce salvate nelle versioni precedenti hanno un id, mentre
+    // genere, atmosfera e BPM appartengono ai metadati correnti del catalogo.
+    const { data } = await fetchJSON<{ data?: AudiusTrack }>(
+      withAppName(`/tracks/${segment(seed.id)}`),
+      params.signal,
+    );
+    const lists: RadioPage[] = [];
+    const genre = optionalString(data?.genre);
+    const mood = optionalString(data?.mood);
+    if (data && (genre || mood)) {
+      const filters: Record<string, string> = genre ? { genre } : { mood: mood! };
+      lists.push((p) =>
+        fetchTracks(
+          withAppName('/tracks/search', { ...filters, ...page(p) }),
+          p.signal,
+          (candidate) => radioRank(data, candidate),
+        ),
+      );
+    }
+    const artistId = optionalString(data?.user?.id) ?? seed.artistId;
+    if (artistId) {
+      lists.push((p) =>
+        fetchTracks(withAppName(`/users/${segment(artistId)}/tracks`, page(p)), p.signal),
+      );
+    }
+    return collectRadioTracks(seed, params, lists);
   },
 
   async trending({ genre, ...rest }: TrendingParams = {}): Promise<SourceTrackPage> {

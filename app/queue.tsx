@@ -23,6 +23,9 @@ import { Artwork } from '@/components/Artwork';
 import { PressableScale } from '@/components/PressableScale';
 import { type Snack, Snackbar } from '@/components/Snackbar';
 import { Empty } from '@/components/StateViews';
+import { ResumeMusicLink } from '@/components/LiveRadioPlayer';
+import { isLiveRadioId } from '@/services/liveRadio';
+import { useNowPlaying, useRadioMusicQueue } from '@/store/session';
 import { type MediaItem, player } from '@/player';
 import { onAppActive } from '@/services/appState';
 import { haptics } from '@/services/haptics';
@@ -192,7 +195,57 @@ const QueueRow = memo(function QueueRow({
  * di verita' anche quando i comandi arrivano dalla notifica. Qui la si
  * legge e basta, ricaricandola a ogni cambio di traccia.
  */
-export default function QueueScreen() {
+export default function QueueRoute() {
+  const { item } = useNowPlaying();
+  return isLiveRadioId(item?.mediaId) ? <PausedMusicQueue /> : <QueueScreen />;
+}
+
+function PausedMusicQueue() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const queue = useRadioMusicQueue();
+  return (
+    <View style={[styles.screen, { paddingHorizontal: spacing.lg, paddingBottom: insets.bottom }]}>
+      <Pressable
+        style={[touch.target, { alignSelf: 'flex-start' }]}
+        accessibilityRole="button"
+        accessibilityLabel="Chiudi"
+        onPress={() => router.back()}
+      >
+        <Ionicons name="chevron-down" size={28} color={colors.textMuted} />
+      </Pressable>
+      <Text style={styles.title}>In coda</Text>
+      <Text style={styles.subtitle}>La radio è in diretta</Text>
+      <ResumeMusicLink />
+      <FlatList
+        data={queue?.tracks ?? []}
+        keyExtractor={(t, i) => t.uid + ':' + i}
+        ListEmptyComponent={
+          <Empty title="Coda vuota" hint="Puoi accodare brani mentre ascolti la radio." />
+        }
+        renderItem={({ item, index }) => (
+          <View style={styles.row}>
+            <Artwork uri={item.artworkUrl} source={item.source} size={44} recyclingKey={item.uid} />
+            <View style={styles.meta}>
+              <Text
+                numberOfLines={1}
+                style={[styles.rowTitle, index === queue?.index && styles.rowTitleActive]}
+              >
+                {item.title}
+              </Text>
+              <Text numberOfLines={1} style={styles.rowArtist}>
+                {item.artist}
+              </Text>
+            </View>
+            <Text style={styles.duration}>{formatTime(item.durationSec)}</Text>
+          </View>
+        )}
+      />
+    </View>
+  );
+}
+
+function QueueScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { shuffle } = usePlaybackPrefs();

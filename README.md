@@ -7,7 +7,7 @@
 
 <p align="center">
   <strong>La tua prossima scoperta musicale.</strong><br>
-  Player Android con codice Spivra sotto MIT per ascoltare Audius e Jamendo.
+  Player Android con codice Spivra sotto MIT per ascoltare Audius, Jamendo e le radio italiane in diretta.
 </p>
 
 <p align="center">
@@ -37,6 +37,31 @@ artisti e album, riproduzione in background con ripresa dell'ascolto,
 controlli dalla schermata di blocco, supporto ad Android Auto, coda
 riordinabile, preferiti, cronologia, playlist e timer di spegnimento. La
 libreria resta sul dispositivo.
+
+In **Cerca**, titolo, artista e versione aiutano a ordinare i brani. Gli estratti
+come teaser e anteprime scendono nelle ricerche generiche. Se trovi due copie
+dello stesso live o remix, quella di più minuti precede l’estratto. Se cerchi
+esplicitamente un’anteprima, ha la precedenza la versione breve. Tocca **Durata dei
+brani** per scegliere una durata rapida o impostare minimo e massimo in
+minuti. Puoi anche scrivere `deep house da 4 a 7 minuti` o toccare uno
+degli esempi in **Prova una ricerca**. Con un filtro attivo i brani sono
+subito visibili e puoi espandere **Artisti e album**. La **×** accanto
+alla durata toglie il filtro e conserva il titolo o il genere cercato. Su Jamendo la
+ricerca include sia i singoli sia le tracce degli album.
+
+Dal menu **⋯** di un risultato o del player, **Playlist da questo brano** propone
+fino a cinque brani affini della stessa sorgente, con la durata selezionata
+in **Cerca**. Ogni suggerimento mostra copertina, titolo, artista
+e durata. Tocca **+** su un brano oppure **Accoda 5 brani** per aggiungerli
+insieme. Il pulsante conta solo i suggerimenti ancora da aggiungere e una
+spunta identifica quelli già in coda.
+
+In **Scopri › Radio in diretta** trovi m2o, Radio Ibiza di Napoli, Radio Italia,
+Virgin Radio, RTL 102.5, RDS, Radio Deejay, Radio 105, Rai Radio 1 e Radio
+Capital. Le schede mostrano le grafiche delle emittenti. Tocca la scheda per
+ascoltare la diretta o il cuore per ritrovarla tra le preferite. Puoi cercare altre emittenti italiane per nome o
+genere nel catalogo [Radio Browser](https://www.radio-browser.info/).
+**Riprendi la mia coda** riporta al brano e alla posizione precedenti.
 
 ## Screenshot
 

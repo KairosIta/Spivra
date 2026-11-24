@@ -13,6 +13,10 @@ export interface MediaItem {
   artist?: string;
   artworkUrl?: string;
   duration?: number;
+  /** Consente al player di riconoscere anche una playlist HLS senza estensione. */
+  mimeType?: string;
+  /** Titolo trasmesso dall'emittente nel flusso in corso. */
+  liveTitle?: string;
   /** Viaggia con il brano e torna indietro intatto (vedi `services/mediaItems`). */
   extras?: Record<string, unknown>;
 }

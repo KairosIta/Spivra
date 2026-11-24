@@ -10,8 +10,9 @@ Le dipendenze non sono rilicenziate sotto MIT. `npm ci` le scarica dai relativi
 registri e ogni dipendenza conserva la propria licenza.
 
 In particolare, il player di Spivra (`modules/onda-player`) è codice originale
-sotto MIT e usa AndroidX Media3 (`androidx.media3:media3-exoplayer` e
-`androidx.media3:media3-session`) di The Android Open Source Project, sotto
+sotto MIT e usa AndroidX Media3 (`androidx.media3:media3-exoplayer`,
+`androidx.media3:media3-exoplayer-hls` e `androidx.media3:media3-session`)
+di The Android Open Source Project, sotto
 [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0). Gradle lo
 scarica durante la build e lo incorpora nell'APK: chi distribuisce un APK deve
 accompagnarlo con il testo della licenza Apache 2.0 e con gli avvisi delle
@@ -80,6 +81,12 @@ equivalente.
 
 ## API e credenziali
 
+La funzione Radio in diretta usa il catalogo comunitario di
+[Radio Browser](https://www.radio-browser.info/) e la sua
+[API pubblica](https://api.radio-browser.info/). Le dirette sono trasmesse
+dagli host delle emittenti. Programmi, musica e marchi restano dei rispettivi
+titolari. Spivra collega il sito dell’emittente nel player quando disponibile.
+
 La licenza MIT non concede accesso alle API e non sostituisce i loro termini
 d'uso. Ogni installazione o distribuzione deve usare credenziali ottenute
 legittimamente dal rispettivo fornitore. Client ID, chiavi API e credenziali di
@@ -117,3 +124,22 @@ piattaforme.
 Salvo diversa indicazione, il nome Spivra e gli asset originali contenuti in
 `assets/brand/` non sono concessi sotto la licenza MIT. Copyright © 2026
 KairosIta. Tutti i diritti riservati su tali elementi.
+
+### Grafiche delle radio in evidenza
+
+Le schede e il player caricano le grafiche dai siti delle emittenti o dai loro
+fornitori di immagini. Le immagini e i marchi appartengono ai rispettivi
+titolari e restano esclusi dalla licenza MIT del codice.
+
+| Emittente     | Grafica utilizzata              | Pagina di provenienza                                                                         |
+| ------------- | ------------------------------- | --------------------------------------------------------------------------------------------- |
+| m2o           | Immagine della diretta          | [m2o On Air](https://www.m2o.it/on-air/)                                                      |
+| Radio Ibiza   | Logo dell’intestazione          | [Radio Ibiza](https://radioibiza.it/)                                                         |
+| Radio Italia  | Immagine di condivisione e logo | [Radio Italia](https://www.radioitalia.it/)                                                   |
+| Virgin Radio  | Immagine di condivisione e logo | [Virgin Radio Italia](https://www.virginradio.it/)                                            |
+| RTL 102.5     | Immagine del canale e icona     | [RTL 102.5 Play](https://play.rtl.it/live/1/radiovisione/) · [RTL 102.5](https://www.rtl.it/) |
+| RDS           | Immagine di condivisione        | [RDS](https://www.rds.it/)                                                                    |
+| Radio Deejay  | Logo del sito                   | [Radio Deejay](https://www.deejay.it/)                                                        |
+| Radio 105     | Immagine di condivisione e logo | [Radio 105](https://www.105.net/)                                                             |
+| Rai Radio 1   | Immagine e logo del canale      | [RaiPlay Sound](https://www.raiplaysound.it/radio1)                                           |
+| Radio Capital | Immagine della diretta          | [Radio Capital On Air](https://www.capital.it/on-air/)                                        |

@@ -7,6 +7,16 @@ import org.junit.Test
 
 class RemoteCommandsTest {
   @Test
+  fun `la diretta conserva play pausa e stop anche per un controller gia connesso`() {
+    val withheld = RemoteCommands.withheld(RemoteCommands.DEFAULT, canBrowse = false, radio = true)
+    assertTrue(Player.COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM in withheld)
+    assertTrue(Player.COMMAND_SEEK_TO_NEXT in withheld)
+    assertTrue(Player.COMMAND_SEEK_BACK in withheld)
+    assertTrue(Player.COMMAND_CHANGE_MEDIA_ITEMS in withheld)
+    assertTrue(Player.COMMAND_PLAY_PAUSE !in withheld)
+    assertTrue(Player.COMMAND_STOP !in withheld)
+  }
+  @Test
   fun `con tutti i tasti di Onda non si toglie niente`() {
     assertTrue(RemoteCommands.withheld(RemoteCommands.DEFAULT, canBrowse = true).isEmpty())
   }

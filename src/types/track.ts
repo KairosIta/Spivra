@@ -63,6 +63,20 @@ export interface SearchParams extends ListParams {
   query: string;
 }
 
+export interface TrackDurationRange {
+  minSec: number;
+  maxSec?: number;
+}
+
+export interface TrackSearchParams extends SearchParams {
+  duration?: TrackDurationRange;
+}
+
+export interface TrackRadioParams {
+  duration?: TrackDurationRange;
+  signal?: AbortSignal;
+}
+
 export interface TrendingParams extends ListParams {
   /** Gia' tradotto nel nome che la sorgente si aspetta (vedi services/genres.ts). */
   genre?: string;
@@ -112,10 +126,11 @@ export interface SourceTrackPage {
 export interface MusicSource {
   id: SourceId;
   label: string;
-  search(params: SearchParams): Promise<SourceTrackPage>;
+  search(params: TrackSearchParams): Promise<SourceTrackPage>;
   trending(params?: TrendingParams): Promise<SourceTrackPage>;
   artistTracks(artistId: string, params?: ListParams): Promise<SourceTrackPage>;
   artistInfo(artistId: string): Promise<ArtistInfo>;
+  radio?(seed: Track, params: TrackRadioParams): Promise<Track[]>;
   albumTracks?(albumId: string, params?: ListParams): Promise<Track[]>;
   albumInfo?(albumId: string): Promise<AlbumInfo>;
   /** Vetrine di Scopri; una sorgente senza vetrine viene semplicemente saltata. */

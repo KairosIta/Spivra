@@ -13,11 +13,17 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useNowPlaying } from '@/store/session';
 import { usePlaybackStatus } from '@/hooks/usePlaybackStatus';
-import { describePlayButton } from '@/services/playbackStatus';
+import {
+  describePlayButton,
+  describeRadioButton,
+  radioStatusText,
+} from '@/services/playbackStatus';
+import { isLiveRadioId, liveStationOf } from '@/services/liveRadio';
 import { skipToNext, togglePlayback } from '@/services/playerCommands';
 import { useProgress } from '@/store/progress';
 import { colors, motion, radius, spacing, touch, type } from '@/theme';
 import { Artwork } from './Artwork';
+import { RadioArtwork } from './RadioArtwork';
 import { PressableScale } from './PressableScale';
 import { parseUid } from '@/types/track';
 
@@ -100,7 +106,8 @@ export function MiniPlayer() {
 
   if (!track) return null;
 
-  const play = describePlayButton(status);
+  const radio = isLiveRadioId(track.mediaId);
+  const play = radio ? describeRadioButton(status) : describePlayButton(status);
 
   return (
     <Animated.View
@@ -115,22 +122,34 @@ export function MiniPlayer() {
           style={({ pressed }) => [styles.body, pressed && styles.bodyPressed]}
           onPress={() => router.push('/player')}
           accessibilityRole="button"
-          accessibilityLabel={`Apri il player: ${track.title} di ${track.artist}`}
+          accessibilityLabel={
+            radio
+              ? 'Apri la diretta di ' + track.title
+              : `Apri il player: ${track.title} di ${track.artist}`
+          }
         >
-          <Artwork
-            source={parseUid(track.mediaId)?.source}
-            uri={track.artworkUrl}
-            size={44}
-            radius={radius.md}
-            recyclingKey={track.mediaId}
-          />
+          {radio ? (
+            <RadioArtwork station={liveStationOf(track)} variant="tile" />
+          ) : (
+            <Artwork
+              source={parseUid(track.mediaId)?.source}
+              uri={track.artworkUrl}
+              size={44}
+              radius={radius.md}
+              recyclingKey={track.mediaId}
+            />
+          )}
 
           <View style={styles.meta}>
             <Text numberOfLines={1} style={styles.title}>
               {track.title}
             </Text>
             <Text numberOfLines={1} style={styles.artist}>
-              {track.artist}
+              {radio
+                ? [radioStatusText(status), status === 'playing' && track.liveTitle]
+                    .filter(Boolean)
+                    .join(' · ')
+                : track.artist}
             </Text>
           </View>
 
@@ -158,18 +177,20 @@ export function MiniPlayer() {
             </View>
           </PressableScale>
 
-          <PressableScale
-            scaleTo={motion.iconPressScale}
-            haptic="tap"
-            containerStyle={touch.target}
-            onPress={skipToNext}
-            accessibilityRole="button"
-            accessibilityLabel="Traccia successiva"
-          >
-            <Ionicons name="play-skip-forward" size={22} color={colors.textMuted} />
-          </PressableScale>
+          {!radio && (
+            <PressableScale
+              scaleTo={motion.iconPressScale}
+              haptic="tap"
+              containerStyle={touch.target}
+              onPress={skipToNext}
+              accessibilityRole="button"
+              accessibilityLabel="Traccia successiva"
+            >
+              <Ionicons name="play-skip-forward" size={22} color={colors.textMuted} />
+            </PressableScale>
+          )}
         </Pressable>
-        <MiniProgress />
+        {!radio && <MiniProgress />}
       </View>
     </Animated.View>
   );

@@ -36,7 +36,12 @@ internal object RemoteCommands {
    * I comandi da togliere a un controller: quelli dei tasti che il JS non ha
    * chiesto e, se non puo' sfogliare la libreria, quelli della coda.
    */
-  fun withheld(enabled: Collection<String>, canBrowse: Boolean): List<Int> =
-    PLAYER_COMMANDS.filterKeys { it !in enabled }.values.flatten() +
-      if (canBrowse) emptyList() else QUEUE_COMMANDS
+  fun withheld(enabled: Collection<String>, canBrowse: Boolean, radio: Boolean = false): List<Int> {
+    val transport = if (radio) enabled - setOf("seek", "previous", "next") else enabled
+    return buildList {
+      addAll(PLAYER_COMMANDS.filterKeys { it !in transport }.values.flatten())
+      if (!canBrowse) addAll(QUEUE_COMMANDS)
+      if (radio) addAll(listOf(Player.COMMAND_SEEK_BACK, Player.COMMAND_SEEK_FORWARD, Player.COMMAND_SEEK_TO_MEDIA_ITEM))
+    }
+  }
 }

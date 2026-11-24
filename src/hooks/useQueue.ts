@@ -6,7 +6,7 @@ import { resetPlaybackErrorBudget } from '@/services/playbackService';
 import { isSourceAvailable } from '@/services/sources/access';
 import { remember } from '@/store/library';
 import { requestNotificationPermission } from '@/store/notificationPermission';
-import { activateSession, clearPending } from '@/store/session';
+import { activateSession, clearPending, insertDuringRadio } from '@/store/session';
 import type { Track } from '@/types/track';
 
 export function useQueue() {
@@ -39,6 +39,7 @@ export function useQueue() {
   const playNext = useCallback(async (track: Track) => {
     if (!isSourceAvailable(track.source)) return false;
     remember([track]);
+    if (insertDuringRadio([track], true)) return true;
     // La coda ripristinata va prima messa nel player, altrimenti "dopo il
     // brano corrente" sarebbe dentro una coda vuota.
     activateSession({ play: false });
@@ -51,6 +52,7 @@ export function useQueue() {
   const addLast = useCallback(async (track: Track) => {
     if (!isSourceAvailable(track.source)) return false;
     remember([track]);
+    if (insertDuringRadio([track])) return true;
     activateSession({ play: false });
     player.addMediaItem(toMediaItem(track));
     return true;

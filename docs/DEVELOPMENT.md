@@ -1375,8 +1375,13 @@ eventuale `.env` non finisca nel bundle, e si cercano nel JS le voci
   I termini API di Jamendo vietano applicazioni progettate per memorizzare i
   contenuti o offrirne l'accesso offline: non implementarlo per quella
   sorgente senza un accordo dedicato.
-- **Radio / simili** — Audius ha `/tracks/{id}/related`: e' la base per un
-  "continua ad ascoltare" vero quando la coda finisce.
+- **Continua ad ascoltare** potrebbe riusare i suggerimenti di **Playlist da
+  questo brano** quando la coda finisce. Su Jamendo la funzione legge i
+  brani simili e, se ne mancano, ne cerca altri con i tag musicali del brano
+  iniziale. Su Audius cerca per genere
+  o atmosfera, dando precedenza ad atmosfera e BPM vicini quando disponibili.
+  Per entrambe le sorgenti, la selezione può includere altri brani dello stesso artista.
+  La durata scelta in Cerca vale per ogni pagina e ogni suggerimento.
 - **Playlist Audius** — `/v1/playlists/{id}/tracks` per navigare anche le
   raccolte pubbliche, non solo i brani singoli.
 - **Terza sorgente** — si comincia aggiungendone l'id a `SOURCE_IDS` in

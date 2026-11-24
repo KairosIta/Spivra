@@ -150,6 +150,22 @@ function DiscoverScreen() {
               </Text>
             </View>
 
+            <PressableScale
+              style={styles.radio}
+              haptic="tap"
+              onPress={() => router.push('/live-radio')}
+              accessibilityRole="button"
+              accessibilityLabel="Radio in diretta, scegli una stazione italiana"
+            >
+              <View style={styles.radioIcon}>
+                <Ionicons name="radio-outline" size={27} color={colors.accent} />
+              </View>
+              <View style={styles.inviteText}>
+                <Text style={styles.radioTitle}>Radio in diretta</Text>
+                <Text style={styles.subtitle}>m2o, Radio Ibiza, RTL 102.5 e altre</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={19} color={colors.textMuted} />
+            </PressableScale>
             {showJamendoInvite(settings, credentials) ? (
               <JamendoInvite
                 onOpen={() => router.push('/sources')}
@@ -215,6 +231,27 @@ function DiscoverScreen() {
 }
 
 const styles = StyleSheet.create({
+  radio: {
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    padding: spacing.md,
+    flexDirection: 'row',
+    gap: spacing.md,
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  radioIcon: {
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.md,
+    backgroundColor: colors.accentDim,
+  },
+  radioTitle: { ...type.title, color: colors.text },
   screen: { flex: 1, backgroundColor: colors.bg },
   header: {
     paddingHorizontal: spacing.lg,

@@ -41,6 +41,8 @@ export interface SavedPosition {
   /** Secondi dall'inizio del brano `uid`. */
   position: number;
   savedAt: number;
+  /** L'utente ha sospeso esplicitamente il brano per ascoltare una diretta. */
+  interruptedByRadio?: true;
 }
 
 /**
@@ -94,6 +96,7 @@ export function loadSavedPosition(value: unknown): SavedPosition | null {
     uid: value.uid,
     position: value.position,
     savedAt: typeof value.savedAt === 'number' ? value.savedAt : 0,
+    ...(value.interruptedByRadio === true ? { interruptedByRadio: true } : {}),
   };
 }
 
@@ -106,6 +109,11 @@ export function loadSavedPosition(value: unknown): SavedPosition | null {
 export function resumePosition(queue: SavedQueue, saved: SavedPosition | null): number {
   const active = queue.tracks[queue.index];
   if (!active || !saved || saved.uid !== active.uid) return 0;
-  if (active.durationSec > 0 && saved.position >= active.durationSec - RESUME_TAIL_SEC) return 0;
+  if (
+    !saved.interruptedByRadio &&
+    active.durationSec > 0 &&
+    saved.position >= active.durationSec - RESUME_TAIL_SEC
+  )
+    return 0;
   return saved.position;
 }

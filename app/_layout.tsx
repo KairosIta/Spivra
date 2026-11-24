@@ -166,6 +166,7 @@ export default function RootLayout() {
                 screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}
               >
                 <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="live-radio" options={{ animation: 'slide_from_right' }} />
                 <Stack.Screen
                   name="player"
                   options={{
@@ -181,6 +182,14 @@ export default function RootLayout() {
                 <Stack.Screen
                   name="queue"
                   options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+                />
+                <Stack.Screen
+                  name="search-duration"
+                  options={{
+                    presentation: 'transparentModal',
+                    animation: 'slide_from_bottom',
+                    contentStyle: { backgroundColor: 'transparent' },
+                  }}
                 />
                 <Stack.Screen name="about" options={{ animation: 'slide_from_right' }} />
                 <Stack.Screen name="licenses/index" options={{ animation: 'slide_from_right' }} />

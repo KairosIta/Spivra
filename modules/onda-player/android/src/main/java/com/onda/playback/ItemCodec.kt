@@ -16,6 +16,8 @@ internal data class ItemTag(val key: String?, val extras: String?)
 internal object ItemCodec {
   /** Un elemento mandato dal JS: chiavi come `NativeMediaItem` in `modules/onda-player`. */
   fun fromJs(map: Map<String, Any?>): MediaItem {
+    val id = map["mediaId"] as? String ?: ""
+    val radio = id.startsWith("radio-browser:")
     val metadata =
       MediaMetadata.Builder()
         .setTitle(map["title"] as? String)
@@ -24,11 +26,12 @@ internal object ItemCodec {
         .setDurationMs((map["duration"] as? Number)?.let { (it.toDouble() * 1000).toLong() })
         .setIsBrowsable(false)
         .setIsPlayable(true)
-        .setMediaType(MediaMetadata.MEDIA_TYPE_MUSIC)
+        .setMediaType(if (radio) MediaMetadata.MEDIA_TYPE_RADIO_STATION else MediaMetadata.MEDIA_TYPE_MUSIC)
         .build()
     return MediaItem.Builder()
-      .setMediaId(map["mediaId"] as? String ?: "")
+      .setMediaId(id)
       .setUri(map["url"] as? String ?: "")
+      .setMimeType(map["mimeType"] as? String)
       .setTag(ItemTag(map["key"] as? String, map["extras"] as? String))
       .setMediaMetadata(metadata)
       .build()

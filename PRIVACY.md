@@ -1,8 +1,6 @@
 # Informativa privacy di Spivra
 
-**Versione:** 1.6 — **in vigore dal 16 novembre 2026**
-
-Aggiornamento del nome da Onda a Spivra; il trattamento dei dati resta invariato.
+**Versione:** 1.8 — **in vigore dal 22 novembre 2026**
 
 Questa informativa descrive il funzionamento delle copie personali dell'app
 Android Spivra compilate dal progetto
@@ -55,6 +53,13 @@ supportate da Android.
 Spivra deve connettersi a servizi esterni per mostrare e riprodurre i cataloghi:
 
 - le ricerche e le richieste di catalogo sono inviate ad Audius e/o Jamendo;
+- nella sezione Radio in diretta, Radio Browser riceve le ricerche, gli
+  identificativi da aggiornare e quello dell’emittente scelta per il suo
+  contatore di ascolti avviati. L’audio arriva dall’emittente o dal suo
+  fornitore di streaming. Quando viene mostrata la grafica di una stazione
+  in evidenza, il telefono la richiede al sito dell’emittente o al suo
+  fornitore di immagini. Spivra tiene queste immagini solo in memoria.
+  L’elenco delle radio preferite è salvato sul telefono;
 - audio, artwork e altri metadati sono scaricati da Audius, Jamendo o dai loro
   host di contenuti;
 - aprendo nell'app un collegamento esterno, la pagina viene gestita dal browser

@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { PressableScale } from '@/components/PressableScale';
+import { Shelf } from '@/components/Shelf';
 import { Empty } from '@/components/StateViews';
 import { haptics } from '@/services/haptics';
 import { exportLibrary, pickBackup, saveLibrary } from '@/services/libraryBackup';
@@ -324,47 +325,6 @@ const EMPTY_PREVIEW: ImportPreview = {
   empty: true,
 };
 
-function Shelf({
-  icon,
-  label,
-  detail,
-  tint,
-  onPress,
-  disabled,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  detail: string;
-  tint?: string;
-  onPress: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      style={({ pressed }) => [
-        styles.shelf,
-        pressed && styles.shelfPressed,
-        disabled && styles.shelfOff,
-      ]}
-      accessibilityRole="button"
-      accessibilityState={{ disabled: Boolean(disabled) }}
-    >
-      <View style={styles.shelfIcon}>
-        <Ionicons name={icon} size={22} color={tint ?? colors.textMuted} />
-      </View>
-      <View style={styles.shelfMeta}>
-        <Text numberOfLines={1} style={styles.shelfLabel}>
-          {label}
-        </Text>
-        <Text style={styles.shelfDetail}>{detail}</Text>
-      </View>
-      <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   content: { paddingBottom: spacing.xxl },
@@ -379,26 +339,6 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.sm,
   },
   sectionTitle: { ...type.title, color: colors.text },
-  shelf: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-  },
-  shelfPressed: { backgroundColor: colors.surface },
-  shelfOff: { opacity: 0.4 },
-  shelfIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.sm,
-    backgroundColor: colors.surfaceHigh,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  shelfMeta: { flex: 1, gap: 2 },
-  shelfLabel: { ...type.body, color: colors.text },
-  shelfDetail: { ...type.caption, color: colors.textMuted },
   backdrop: { flex: 1, backgroundColor: '#000000AA' },
   dialog: {
     position: 'absolute',

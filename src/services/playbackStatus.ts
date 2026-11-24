@@ -67,6 +67,20 @@ export interface PlayButton {
   busy: boolean;
 }
 
+export function radioStatusText(status: PlaybackStatus): string {
+  if (status === 'playing') return 'In diretta';
+  if (status === 'buffering') return 'Connessione…';
+  if (status === 'error' || status === 'ended') return 'Diretta interrotta';
+  return 'In pausa';
+}
+
+export function describeRadioButton(status: PlaybackStatus): PlayButton {
+  if (status === 'error' || status === 'ended') {
+    return { icon: 'refresh', label: 'Riprova la diretta', busy: false };
+  }
+  return describePlayButton(status);
+}
+
 /**
  * Icona ed etichetta del tasto play per ogni stato. Durante il buffering
  * il tasto resta "pausa": chi tocca uno spinner vuole fermare il

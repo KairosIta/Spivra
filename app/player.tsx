@@ -30,6 +30,8 @@ import { Artwork } from '@/components/Artwork';
 import { ArtworkAtmosphere } from '@/components/ArtworkAtmosphere';
 import { HeartButton } from '@/components/HeartButton';
 import { PressableScale } from '@/components/PressableScale';
+import { type Snack, Snackbar } from '@/components/Snackbar';
+import { TrackActions } from '@/components/TrackActions';
 import { usePlaybackStatus } from '@/hooks/usePlaybackStatus';
 import { useUpNext } from '@/hooks/useUpNext';
 import { haptics } from '@/services/haptics';
@@ -52,6 +54,8 @@ import {
 import { cycleRepeat, toggleShuffle, usePlaybackPrefs } from '@/store/playback';
 import { useProgress } from '@/store/progress';
 import { activateSession, seekPending, useNowPlaying } from '@/store/session';
+import { LiveRadioPlayer } from '@/components/LiveRadioPlayer';
+import { liveStationOf } from '@/services/liveRadio';
 import { cancelSleepTimer, startSleepTimer, useSleepTimer } from '@/store/sleepTimer';
 import { colors, formatTime, motion, radius, spacing, touch, type } from '@/theme';
 import type { Track } from '@/types/track';
@@ -155,7 +159,17 @@ const SeekBar = memo(function SeekBar({ pending }: { pending: boolean }) {
   );
 });
 
-export default function PlayerScreen() {
+export default function PlayerRoute() {
+  const { item } = useNowPlaying();
+  const station = liveStationOf(item);
+  return station ? (
+    <LiveRadioPlayer station={station} liveTitle={item?.liveTitle} />
+  ) : (
+    <PlayerScreen />
+  );
+}
+
+function PlayerScreen() {
   const router = useRouter();
   // Android 16 impone l'edge-to-edge: il contenuto disegna sotto la barra
   // di navigazione, e senza questo margine la riga della licenza ci finisce
@@ -182,6 +196,9 @@ export default function PlayerScreen() {
   const upNext = useUpNext();
 
   const [sleepOpen, setSleepOpen] = useState(false);
+  const [menuFor, setMenuFor] = useState<Track | null>(null);
+  const [snack, setSnack] = useState<Snack | null>(null);
+  const dismissSnack = useCallback(() => setSnack(null), []);
   const [scrollViewportHeight, setScrollViewportHeight] = useState(0);
   const [scrollContentHeight, setScrollContentHeight] = useState(0);
 
@@ -352,6 +369,15 @@ export default function PlayerScreen() {
                     accessibilityLabel="Coda di riproduzione"
                   >
                     <Ionicons name="list" size={24} color={colors.textMuted} />
+                  </PressableScale>
+                  <PressableScale
+                    onPress={() => setMenuFor(track)}
+                    containerStyle={touch.target}
+                    scaleTo={motion.iconPressScale}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Opzioni per ${track.title}`}
+                  >
+                    <Ionicons name="ellipsis-horizontal" size={24} color={colors.textMuted} />
                   </PressableScale>
                 </View>
               </View>
@@ -579,6 +605,8 @@ export default function PlayerScreen() {
           </View>
         </ScrollView>
 
+        <TrackActions track={menuFor} onClose={() => setMenuFor(null)} onDone={setSnack} />
+        <Snackbar snack={snack} onDismiss={dismissSnack} bottom={insets.bottom} />
         <Modal
           visible={sleepOpen}
           transparent

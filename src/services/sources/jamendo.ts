@@ -13,6 +13,8 @@ import {
   type SourceTrackPage,
   type SpotlightKind,
   type Track,
+  type TrackDurationRange,
+  type TrackSearchParams,
   type TrendingParams,
 } from '@/types/track';
 import { nonEmptyString, optionalString } from '@/utils/validate';
@@ -20,6 +22,7 @@ import { currentCredentials } from './access';
 import { fetchJSON } from './http';
 import { stripJamendoAppTag } from './jamendoStream';
 import { SOURCE_META } from './meta';
+import { collectRadioTracks, type RadioPage } from './trackRadio';
 
 const BASE = 'https://api.jamendo.com/v3.0';
 
@@ -36,6 +39,7 @@ interface JamendoTrack {
   audio: string;
   license_ccurl?: string;
   shareurl?: string;
+  musicinfo?: { tags?: { genres?: string[]; vartags?: string[]; instruments?: string[] } };
   /** Posizione nell'album. C'e' anche nelle risposte piatte di /tracks/. */
   position?: number | string;
 }
@@ -349,12 +353,88 @@ async function fetchTracks(requestUrl: string, signal?: AbortSignal): Promise<So
   return { tracks: results.filter(usable).map(mapTrack), hasMore: results.length > 0 };
 }
 
+function durationParams(duration?: TrackDurationRange): Record<string, string> {
+  // Jamendo accetta solo intervalli chiusi, anche per un minimo senza massimo.
+  return duration
+    ? { durationbetween: [duration.minSec, duration.maxSec ?? 2_147_483_647].join('_') }
+    : {};
+}
+
+/** I singoli con pochi simili possono condividere i tag con brani di altri artisti. */
+function radioByTags(seedId: string, duration?: TrackDurationRange): RadioPage {
+  let tags: string | undefined;
+  return async (p) => {
+    if (tags === undefined) {
+      const [seed] = await fetchResults<JamendoTrack>(
+        url('/tracks/', {
+          id: seedId,
+          type: 'single albumtrack',
+          include: 'musicinfo',
+          limit: '1',
+        }),
+        { signal: p.signal },
+      );
+      const info = seed?.id === seedId ? seed.musicinfo?.tags : undefined;
+      const terms = [info?.genres, info?.vartags, info?.instruments].flatMap((group) =>
+        Array.isArray(group)
+          ? group
+              .filter(nonEmptyString)
+              .map((tag) => tag.trim())
+              .filter(Boolean)
+              .slice(0, 2)
+          : [],
+      );
+      tags = [...new Set(terms)].join(' ');
+    }
+    if (!tags) return { tracks: [], hasMore: false };
+    return fetchTracks(
+      url('/tracks/', {
+        fuzzytags: tags,
+        type: 'single albumtrack',
+        ...durationParams(duration),
+        ...page(p),
+      }),
+      p.signal,
+    );
+  };
+}
+
 export const jamendoSource: MusicSource = {
   id: 'jamendo',
   label: SOURCE_META.jamendo.label,
 
-  async search({ query, ...rest }: SearchParams): Promise<SourceTrackPage> {
-    return fetchTracks(url('/tracks/', { search: query, ...page(rest) }), rest.signal);
+  async search({ query, duration, ...rest }: TrackSearchParams): Promise<SourceTrackPage> {
+    return fetchTracks(
+      url('/tracks/', {
+        search: query,
+        type: 'single albumtrack',
+        ...durationParams(duration),
+        ...page(rest),
+      }),
+      rest.signal,
+    );
+  },
+
+  radio(seed, params) {
+    const lists: RadioPage[] = [
+      (p) => fetchTracks(url('/tracks/similar/', { id: seed.id, ...page(p) }), p.signal),
+      radioByTags(seed.id, params.duration),
+    ];
+    const { artistId } = seed;
+    if (artistId) {
+      lists.push((p) =>
+        fetchTracks(
+          url('/tracks/', {
+            artist_id: artistId,
+            type: 'single albumtrack',
+            ...durationParams(params.duration),
+            ...page(p),
+          }),
+          p.signal,
+        ),
+      );
+    }
+    return collectRadioTracks(seed, params, lists);
   },
 
   async trending({ genre, ...rest }: TrendingParams = {}): Promise<SourceTrackPage> {

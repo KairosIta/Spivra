@@ -4,10 +4,16 @@ import assert from 'node:assert/strict';
 import test, { afterEach } from 'node:test';
 import { player } from '@/player';
 import { toMediaItem } from '@/services/mediaItems';
+import { ITALIAN_PRESETS } from '@/services/liveRadio';
+import { enqueueRadioTracks, radioQueueIds } from '@/services/radioQueue';
 import { NO_CREDENTIALS } from '@/services/sourceSettings';
 import { setSourceAccess } from '@/services/sources/access';
 import {
   activateSession,
+  getRadioMusicQueue,
+  insertDuringRadio,
+  playStation,
+  resumeRadioMusic,
   getPendingQueue,
   restoreSession,
   savePosition,
@@ -70,6 +76,89 @@ function restartWith(queue: Track[], index: number, position: number): void {
   restoreSession();
   fakePlayer.clearCalls();
 }
+
+test('due dirette e i tick in background conservano la coda attiva e il punto esatto', () => {
+  player.setMediaItems(tracks.map(toMediaItem), 1);
+  player.seekTo(116);
+  fakePlayer.flush();
+  playStation(ITALIAN_PRESETS[0]);
+  fakePlayer.flush();
+  playStation(ITALIAN_PRESETS[1]);
+  fakePlayer.flush();
+  const radio = player.getActiveMediaItem()!;
+  savePosition(radio.mediaId, 32);
+  saveQueueSnapshot();
+  setAppState('background');
+  setAppState('active');
+  restoreSession();
+  assert.equal(getRadioMusicQueue()?.position, 116);
+  assert.equal(resumeRadioMusic(), true);
+  assert.deepEqual(
+    player.getQueue().map((t) => t.mediaId),
+    tracks.map((t) => t.uid),
+  );
+  assert.equal(player.getActiveIndex(), 1);
+  assert.equal(player.getProgress().position, 116);
+});
+
+test('dalla coda in attesa si passa alla diretta e si accodano brani senza interromperla', () => {
+  restartWith(tracks.slice(0, 2), 1, 42);
+  playStation(ITALIAN_PRESETS[0]);
+  fakePlayer.flush();
+  assert.equal(getPendingQueue(), null);
+  assert.deepEqual(
+    [...enqueueRadioTracks(tracks)],
+    tracks.map((t) => t.uid),
+  );
+  assert.equal(player.getQueue().length, 1);
+  assert.equal(insertDuringRadio([track('audius', 'd')], true), true);
+  assert.equal(resumeRadioMusic(), true);
+  assert.deepEqual(
+    player.getQueue().map((t) => t.mediaId),
+    ['audius:a', 'audius:b', 'audius:d', 'audius:c'],
+  );
+  assert.equal(player.getActiveIndex(), 1);
+  assert.equal(player.getProgress().position, 42);
+});
+
+test('una diretta partita senza musica accetta il primo brano da riprendere', () => {
+  stopPlayer();
+  playStation(ITALIAN_PRESETS[0]);
+  fakePlayer.flush();
+  assert.equal(resumeRadioMusic(), false);
+  assert.equal(insertDuringRadio([tracks[0]]), true);
+  assert.equal(resumeRadioMusic(), true);
+  assert.equal(player.getActiveMediaItem()?.mediaId, tracks[0].uid);
+});
+
+test('dopo la chiusura durante una diretta tornano anche gli ultimi secondi del brano interrotto', () => {
+  player.setMediaItems(tracks.map(toMediaItem), 1);
+  player.seekTo(118);
+  fakePlayer.flush();
+  playStation(ITALIAN_PRESETS[1]);
+  fakePlayer.flush();
+  savePosition(tracks[1].uid, 112);
+  stopPlayer();
+  restoreSession();
+  assert.equal(activateSession({ play: true }), true);
+  assert.equal(player.getActiveIndex(), 1);
+  assert.equal(player.getProgress().position, 118);
+});
+
+test('la radio riconosce la coda ripristinata e aggiunge i suggerimenti mancanti senza avviare il player', () => {
+  restartWith(tracks.slice(0, 2), 1, 42);
+  assert.deepEqual(
+    [...radioQueueIds()],
+    tracks.slice(0, 2).map((t) => t.uid),
+  );
+  assert.deepEqual(
+    [...enqueueRadioTracks(tracks)],
+    tracks.map((t) => t.uid),
+  );
+  assert.deepEqual(fakePlayer.calls(), ['setMediaItems', 'seekTo', 'insertMediaItems']);
+  assert.equal(player.getActiveIndex(), 1);
+  assert.equal(player.getProgress().position, 42);
+});
 
 test('la sessione salvata torna in attesa senza toccare il player', () => {
   restartWith(tracks, 1, 42);
