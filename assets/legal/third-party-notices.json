@@ -2358,7 +2358,7 @@
     {
       "kind": "npm",
       "name": "@tanstack/query-core",
-      "version": "5.107.1",
+      "version": "5.108.4",
       "license": "MIT",
       "holder": "Copyright (c) 2021-present Tanner Linsley",
       "scopes": [
@@ -2371,7 +2371,7 @@
     {
       "kind": "npm",
       "name": "@tanstack/react-query",
-      "version": "5.107.1",
+      "version": "5.108.4",
       "license": "MIT",
       "holder": "Copyright (c) 2021-present Tanner Linsley",
       "scopes": [
